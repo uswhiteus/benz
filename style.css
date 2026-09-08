@@ -162,3 +162,30 @@ color: #555;
 color: #999;
 text-align: center;
 }
+.fuel-gauge {
+    width: 70px;
+    height: 220px;
+    margin: 0 auto 8px;
+    border: 4px solid #111;
+    border-radius: 18px;
+    padding: 4px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background: #eee;
+}
+
+.fuel-level {
+    width: 100%;
+    height: 0%;
+    border-radius: 10px;
+    background: #111;
+    transition: height 0.4s ease;
+}
+
+.fuel-percent {
+    text-align: center;
+    margin-bottom: 18px;
+    font-size: 16px;
+    font-weight: 600;
+}
