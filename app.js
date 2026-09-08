@@ -59,9 +59,22 @@ try {
 }
 
 function render() {
-fuelAmount.textContent = Number(fuel).toFixed(1);
-}
+    const amount = Number(fuel);
+    const maxFuel = 60;
 
+    fuelAmount.textContent = amount.toFixed(1);
+
+    const percent = Math.min(
+        100,
+        Math.max(0, (amount / maxFuel) * 100)
+    );
+
+    document.getElementById("fuelLevel").style.height =
+        `${percent}%`;
+
+    document.getElementById("fuelPercent").textContent =
+        `${Math.round(percent)}%`;
+}
 async function changeFuel(amount) {
 if (!roomCode) {
 alert("Сначала создай или подключись к комнате.");
