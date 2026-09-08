@@ -4,7 +4,6 @@ import {
     getFirestore,
     doc,
     setDoc,
-    getDoc,
     onSnapshot,
     collection,
     addDoc,
@@ -45,53 +44,100 @@ const historyElement = document.getElementById("history");
 
 async function start() {
 
+    // Получаем имя пользователя
     if (!userName) {
-        userName = prompt("Как тебя зовут?") || "Пользователь";
-        localStorage.setItem("userName", userName);
+
+        userName =
+            prompt("Как тебя зовут?") ||
+            "Пользователь";
+
+        localStorage.setItem(
+            "userName",
+            userName
+        );
     }
+
 
     try {
 
+        // Авторизация Firebase
         await signInAnonymously(auth);
 
+
+        // Если пользователь уже был в комнате,
+        // автоматически подключаем его
         if (roomCode) {
-            await connectToRoom(roomCode);
+
+            connectToRoom(roomCode);
+
         } else {
+
             render();
         }
 
+
     } catch (error) {
 
-        console.error(error);
-        alert("Ошибка подключения к Firebase.");
+        console.error(
+            "Firebase error:",
+            error
+        );
 
+        alert(
+            "Ошибка подключения к Firebase."
+        );
     }
 }
 
 
 function render() {
 
-    const amount = Number(fuel);
+    const amount =
+        Number(fuel);
+
+
     const maxFuel = 60;
 
-    fuelAmount.textContent = amount.toFixed(1);
 
-    const percent = Math.min(
-        100,
-        Math.max(0, (amount / maxFuel) * 100)
-    );
+    // Количество литров
+    fuelAmount.textContent =
+        amount.toFixed(1);
 
+
+    // Процент заполнения
+    const percent =
+        Math.min(
+            100,
+            Math.max(
+                0,
+                (amount / maxFuel) * 100
+            )
+        );
+
+
+    // Индикатор
     const fuelLevel =
-        document.getElementById("fuelLevel");
+        document.getElementById(
+            "fuelLevel"
+        );
 
-    const fuelPercent =
-        document.getElementById("fuelPercent");
 
     if (fuelLevel) {
-        fuelLevel.style.height = `${percent}%`;
+
+        fuelLevel.style.height =
+            `${percent}%`;
     }
 
+
+    // Процент
+    const fuelPercent =
+        document.getElementById(
+            "fuelPercent"
+        );
+
+
     if (fuelPercent) {
+
         fuelPercent.textContent =
             `${Math.round(percent)}%`;
     }
@@ -101,44 +147,73 @@ function render() {
 async function changeFuel(amount) {
 
     if (!roomCode) {
-        alert("Сначала создай или подключись к комнате.");
+
+        alert(
+            "Сначала создай или подключись к комнате."
+        );
+
         return;
     }
 
-    const newFuel = Math.max(
-        0,
-        Number(fuel) + amount
-    );
 
-    await updateFuel(newFuel, amount);
+    const newFuel =
+        Math.max(
+            0,
+            Number(fuel) + Number(amount)
+        );
+
+
+    await updateFuel(
+        newFuel,
+        Number(amount)
+    );
 }
 
 
 async function setFuel() {
 
     if (!roomCode) {
-        alert("Сначала создай или подключись к комнате.");
+
+        alert(
+            "Сначала создай или подключись к комнате."
+        );
+
         return;
     }
 
+
     const input =
-        document.getElementById("manualAmount");
+        document.getElementById(
+            "manualAmount"
+        );
+
 
     const value =
         Number(input.value);
 
-    if (isNaN(value) || value < 0) {
-        alert("Введите корректное количество.");
+
+    if (
+        isNaN(value) ||
+        value < 0
+    ) {
+
+        alert(
+            "Введите корректное количество."
+        );
+
         return;
     }
 
+
     const change =
-        value - fuel;
+        value - Number(fuel);
+
 
     await updateFuel(
         value,
         change
     );
+
 
     input.value = "";
 }
@@ -156,10 +231,12 @@ async function updateFuel(
             roomCode
         );
 
+
+    // Сохраняем количество топлива
     await setDoc(
         roomRef,
         {
-            fuel: newFuel,
+            fuel: Number(newFuel),
             updatedAt: Date.now(),
             updatedBy: userName
         },
@@ -168,6 +245,8 @@ async function updateFuel(
         }
     );
 
+
+    // Записываем изменение в историю
     await addDoc(
         collection(
             db,
@@ -177,111 +256,116 @@ async function updateFuel(
         ),
         {
             name: userName,
-            change: change,
+            change: Number(change),
             time: Date.now()
         }
     );
 }
 
 
-async function connectToRoom(code) {
+function connectToRoom(code) {
 
-    roomCode = code;
+    roomCode =
+        code.toUpperCase();
 
+
+    // Сохраняем комнату на телефоне
     localStorage.setItem(
         "roomCode",
-        code
+        roomCode
     );
 
 
+    // Показываем комнату
     document.getElementById(
         "roomStatus"
     ).textContent =
-        `Комната ${code}`;
+        `Комната ${roomCode}`;
 
 
     document.getElementById(
         "currentRoom"
-    ).classList.remove("hidden");
+    ).classList.remove(
+        "hidden"
+    );
 
 
     document.getElementById(
         "roomCodeDisplay"
     ).textContent =
-        code;
+        roomCode;
 
 
     const roomRef =
         doc(
             db,
             "rooms",
-            code
+            roomCode
         );
 
 
-    // Сначала загружаем сохранённые данные
-    const roomSnapshot =
-        await getDoc(roomRef);
-
-
-    if (roomSnapshot.exists()) {
-
-        const data =
-            roomSnapshot.data();
-
-        fuel =
-            Number(data.fuel || 0);
-
-        render();
-
-    } else {
-
-        // Создаём новую комнату только если её действительно нет
-        fuel = 0;
-
-        await setDoc(
-            roomRef,
-            {
-                fuel: 0,
-                updatedAt: Date.now(),
-                updatedBy: userName
-            },
-            {
-                merge: true
-            }
-        );
-
-        render();
-    }
-
-
-    // Постоянная синхронизация
+    // Firebase сам:
+    // 1. загрузит сохранённое значение
+    // 2. будет следить за изменениями
+    // 3. обновит приложение без перезагрузки
     onSnapshot(
         roomRef,
-        (snapshot) => {
+        async (snapshot) => {
 
-            if (!snapshot.exists()) {
-                return;
+            if (snapshot.exists()) {
+
+                const data =
+                    snapshot.data();
+
+
+                fuel =
+                    Number(
+                        data.fuel ?? 0
+                    );
+
+
+                render();
+
+
+            } else {
+
+                // Комната ещё не существует
+                await setDoc(
+                    roomRef,
+                    {
+                        fuel: 0,
+                        updatedAt: Date.now(),
+                        updatedBy: userName
+                    }
+                );
+
+
+                fuel = 0;
+
+                render();
             }
+        },
+        (error) => {
 
-            const data =
-                snapshot.data();
+            console.error(
+                "Ошибка комнаты:",
+                error
+            );
 
-            fuel =
-                Number(data.fuel || 0);
-
-            render();
+            alert(
+                "Ошибка загрузки комнаты."
+            );
         }
     );
 
 
-    // История изменений
+    // История
     const historyQuery =
         query(
             collection(
                 db,
                 "rooms",
-                code,
+                roomCode,
                 "history"
             ),
             orderBy(
@@ -296,7 +380,8 @@ async function connectToRoom(code) {
         historyQuery,
         (snapshot) => {
 
-            historyElement.innerHTML = "";
+            historyElement.innerHTML =
+                "";
 
 
             if (snapshot.empty) {
@@ -326,7 +411,9 @@ async function connectToRoom(code) {
 
 
                     const change =
-                        Number(data.change) >= 0
+                        Number(
+                            data.change
+                        ) >= 0
                             ? `+${Number(data.change).toFixed(1)} л`
                             : `${Number(data.change).toFixed(1)} л`;
 
@@ -338,14 +425,15 @@ async function connectToRoom(code) {
                             </div>
 
                             <div>
-                                ${new Date(data.time)
-                                    .toLocaleTimeString(
-                                        "ru-RU",
-                                        {
-                                            hour: "2-digit",
-                                            minute: "2-digit"
-                                        }
-                                    )}
+                                ${new Date(
+                                    data.time
+                                ).toLocaleTimeString(
+                                    "ru-RU",
+                                    {
+                                        hour: "2-digit",
+                                        minute: "2-digit"
+                                    }
+                                )}
                             </div>
                         </div>
 
@@ -360,6 +448,13 @@ async function connectToRoom(code) {
                     );
                 }
             );
+        },
+        (error) => {
+
+            console.error(
+                "Ошибка истории:",
+                error
+            );
         }
     );
 }
@@ -370,17 +465,24 @@ function createRoom() {
     const code =
         Math.random()
             .toString(36)
-            .substring(2, 8)
+            .substring(
+                2,
+                8
+            )
             .toUpperCase();
 
 
+    // Запоминаем комнату
     localStorage.setItem(
         "roomCode",
         code
     );
 
 
-    connectToRoom(code);
+    // Подключаемся
+    connectToRoom(
+        code
+    );
 
 
     alert(
@@ -403,7 +505,9 @@ function joinRoom() {
             .toUpperCase();
 
 
-    if (code.length !== 6) {
+    if (
+        code.length !== 6
+    ) {
 
         alert(
             "Введите 6-значный код комнаты."
@@ -413,7 +517,17 @@ function joinRoom() {
     }
 
 
-    connectToRoom(code);
+    // Запоминаем комнату
+    localStorage.setItem(
+        "roomCode",
+        code
+    );
+
+
+    // Подключаемся
+    connectToRoom(
+        code
+    );
 
 
     alert(
@@ -422,6 +536,8 @@ function joinRoom() {
 }
 
 
+// Делаем функции доступными
+// для кнопок в index.html
 window.changeFuel =
     changeFuel;
 
@@ -435,4 +551,5 @@ window.joinRoom =
     joinRoom;
 
 
+// Запуск приложения
 start();
