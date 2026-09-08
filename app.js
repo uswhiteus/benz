@@ -1,75 +1,85 @@
-let fuel = Number(localStorage.getItem("fuel") || 0);
-let history = JSON.parse(localStorage.getItem("history") || "[]");
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+getFirestore,
+doc,
+setDoc,
+getDoc,
+onSnapshot,
+collection,
+addDoc,
+query,
+orderBy,
+limit
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
+
+import {
+getAuth,
+signInAnonymously
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyDwcaEumdBQeaaar4lAH_hAxcTXx1nQ7v0",
+authDomain: "benz-83cac.firebaseapp.com",
+projectId: "benz-83cac",
+storageBucket: "benz-83cac.firebasestorage.app",
+messagingSenderId: "884798326345",
+appId: "1:884798326345:web:8a5e7ff77bd398fe66a198"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
+
+let fuel = 0;
+let roomCode = localStorage.getItem("roomCode");
+let userName = localStorage.getItem("userName");
 
 const fuelAmount = document.getElementById("fuelAmount");
 const historyElement = document.getElementById("history");
 
-function save() {
-localStorage.setItem("fuel", fuel);
-localStorage.setItem("history", JSON.stringify(history));
+async function start() {
+if (!userName) {
+userName = prompt("Как тебя зовут?") || "Пользователь";
+localStorage.setItem("userName", userName);
+}
+
+try {
+    await signInAnonymously(auth);
+
+    if (roomCode) {
+        connectToRoom(roomCode);
+    }
+
+    render();
+} catch (error) {
+    console.error(error);
+    alert("Ошибка подключения к Firebase.");
+}
+
 }
 
 function render() {
-fuelAmount.textContent = fuel.toFixed(1);
-
-if (history.length === 0) {
-    historyElement.innerHTML =
-        '<p class="empty">Изменений пока нет</p>';
-    return;
+fuelAmount.textContent = Number(fuel).toFixed(1);
 }
 
-historyElement.innerHTML = history
-    .slice()
-    .reverse()
-    .map(item => `
-        <div class="history-item">
-            <div>
-                <div class="history-name">${item.name}</div>
-                <div>${item.time}</div>
-            </div>
-            <div class="history-change">${item.change}</div>
-        </div>
-    `)
-    .join("");
+async function changeFuel(amount) {
+if (!roomCode) {
+alert("Сначала создай или подключись к комнате.");
+return;
+}
+
+const newFuel = Math.max(0, Number(fuel) + amount);
+
+await updateFuel(newFuel, amount);
 
 }
 
-function getName() {
-let name = localStorage.getItem("userName");
-
-if (!name) {
-    name = prompt("Как тебя зовут?") || "Пользователь";
-    localStorage.setItem("userName", name);
+async function setFuel() {
+if (!roomCode) {
+alert("Сначала создай или подключись к комнате.");
+return;
 }
 
-return name;
-
-}
-
-function addHistory(change) {
-history.push({
-name: getName(),
-change: change > 0 ? "+${change.toFixed(1)} л" : "${change.toFixed(1)} л",
-time: new Date().toLocaleTimeString("ru-RU", {
-hour: "2-digit",
-minute: "2-digit"
-})
-});
-
-if (history.length > 50) {
-    history.shift();
-}
-
-}
-
-function changeFuel(amount) {
-fuel = Math.max(0, fuel + amount);
-addHistory(amount);
-save();
-render();
-}
-
-function setFuel() {
 const input = document.getElementById("manualAmount");
 const value = Number(input.value);
 
@@ -79,13 +89,95 @@ if (isNaN(value) || value < 0) {
 }
 
 const change = value - fuel;
-fuel = value;
 
-addHistory(change);
-save();
-render();
+await updateFuel(value, change);
 
 input.value = "";
+
+}
+
+async function updateFuel(newFuel, change) {
+const roomRef = doc(db, "rooms", roomCode);
+
+await setDoc(roomRef, {
+    fuel: newFuel,
+    updatedAt: Date.now(),
+    updatedBy: userName
+}, { merge: true });
+
+await addDoc(collection(db, "rooms", roomCode, "history"), {
+    name: userName,
+    change: change,
+    time: Date.now()
+});
+
+}
+
+function connectToRoom(code) {
+roomCode = code;
+localStorage.setItem("roomCode", code);
+
+document.getElementById("roomStatus").textContent =
+    `Комната ${code}`;
+
+document.getElementById("currentRoom")
+    .classList.remove("hidden");
+
+document.getElementById("roomCodeDisplay")
+    .textContent = code;
+
+const roomRef = doc(db, "rooms", code);
+
+onSnapshot(roomRef, (snapshot) => {
+    if (snapshot.exists()) {
+        const data = snapshot.data();
+        fuel = Number(data.fuel || 0);
+        render();
+    }
+});
+
+const historyQuery = query(
+    collection(db, "rooms", code, "history"),
+    orderBy("time", "desc"),
+    limit(50)
+);
+
+onSnapshot(historyQuery, (snapshot) => {
+    historyElement.innerHTML = "";
+
+    if (snapshot.empty) {
+        historyElement.innerHTML =
+            '<p class="empty">Изменений пока нет</p>';
+        return;
+    }
+
+    snapshot.forEach((item) => {
+        const data = item.data();
+
+        const div = document.createElement("div");
+        div.className = "history-item";
+
+        const change =
+            Number(data.change) >= 0
+                ? `+${Number(data.change).toFixed(1)} л`
+                : `${Number(data.change).toFixed(1)} л`;
+
+        div.innerHTML = `
+            <div>
+                <div class="history-name">${data.name}</div>
+                <div>
+                    ${new Date(data.time).toLocaleTimeString("ru-RU", {
+                        hour: "2-digit",
+                        minute: "2-digit"
+                    })}
+                </div>
+            </div>
+            <div class="history-change">${change}</div>
+        `;
+
+        historyElement.appendChild(div);
+    });
+});
 
 }
 
@@ -95,9 +187,11 @@ const code = Math.random()
 .substring(2, 8)
 .toUpperCase();
 
+fuel = 0;
+
 localStorage.setItem("roomCode", code);
 
-showRoom(code);
+connectToRoom(code);
 
 alert(`Комната создана!\nКод: ${code}`);
 
@@ -112,30 +206,15 @@ if (code.length !== 6) {
     return;
 }
 
-localStorage.setItem("roomCode", code);
-
-showRoom(code);
+connectToRoom(code);
 
 alert(`Ты вошёл в комнату ${code}`);
 
 }
 
-function showRoom(code) {
-document.getElementById("roomStatus").textContent =
-"Комната ${code}";
+window.changeFuel = changeFuel;
+window.setFuel = setFuel;
+window.createRoom = createRoom;
+window.joinRoom = joinRoom;
 
-document.getElementById("currentRoom")
-    .classList.remove("hidden");
-
-document.getElementById("roomCodeDisplay")
-    .textContent = code;
-
-}
-
-const savedRoom = localStorage.getItem("roomCode");
-
-if (savedRoom) {
-showRoom(savedRoom);
-}
-
-render();
+start();
