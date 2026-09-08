@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#111111">
+    <title>Бензин</title>
+    <link rel="stylesheet" href="style.css">
+</head><body>
+    <main class="app">    <header>
+        <div class="logo">⛽</div>
+        <div>
+            <h1>Бензин</h1>
+            <p id="roomStatus">Локальный режим</p>
+        </div>
+    </header>
+
+    <section class="fuel-card">
+        <span class="label">Сейчас в баке</span>
+
+        <div class="fuel-value">
+            <span id="fuelAmount">0.0</span>
+            <span class="unit">л</span>
+        </div>
+
+        <div class="buttons">
+            <button onclick="changeFuel(-5)">−5 л</button>
+            <button onclick="changeFuel(-1)">−1 л</button>
+            <button onclick="changeFuel(1)">+1 л</button>
+            <button onclick="changeFuel(5)">+5 л</button>
+        </div>
+
+        <div class="manual">
+            <input
+                id="manualAmount"
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="Точное количество"
+            >
+            <button onclick="setFuel()">Установить</button>
+        </div>
+    </section>
+
+    <section class="room-card">
+        <h2>Общий доступ</h2>
+
+        <button class="primary" onclick="createRoom()">
+            Создать комнату
+        </button>
+
+        <div class="join">
+            <input
+                id="roomCode"
+                type="text"
+                maxlength="6"
+                placeholder="Код комнаты"
+            >
+            <button onclick="joinRoom()">Войти</button>
+        </div>
+
+        <div id="currentRoom" class="current-room hidden">
+            Код комнаты:
+            <strong id="roomCodeDisplay"></strong>
+        </div>
+    </section>
+
+    <section class="history-card">
+        <h2>История</h2>
+        <div id="history">
+            <p class="empty">Изменений пока нет</p>
+        </div>
+    </section>
+
+</main>
+
+<script src="app.js"></script>
+
+</body>
+</html>
