@@ -991,3 +991,167 @@ window.cancelSOS =
 
 
 start();
+// ================================
+// УСТАНОВКА ПРИЛОЖЕНИЯ
+// ================================
+
+let deferredPrompt = null;
+
+const installButton =
+    document.getElementById("installButton");
+
+const installOverlay =
+    document.getElementById("installOverlay");
+
+const installInstructions =
+    document.getElementById("installInstructions");
+
+
+// Проверяем, установлено ли приложение
+function isStandalone() {
+    return (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        window.navigator.standalone === true
+    );
+}
+
+
+// Android / Chrome
+window.addEventListener("beforeinstallprompt", event => {
+
+    event.preventDefault();
+
+    deferredPrompt = event;
+
+    if (installButton && !isStandalone()) {
+        installButton.classList.remove("hidden");
+    }
+});
+
+
+// Нажатие на кнопку
+async function installApp() {
+
+    if (isStandalone()) {
+        installButton?.classList.add("hidden");
+        return;
+    }
+
+
+    // Android
+    if (deferredPrompt) {
+
+        deferredPrompt.prompt();
+
+        const result =
+            await deferredPrompt.userChoice;
+
+        deferredPrompt = null;
+
+        if (result.outcome === "accepted") {
+            installButton?.classList.add("hidden");
+        }
+
+        return;
+    }
+
+
+    // iPhone / iPad
+    const userAgent =
+        window.navigator.userAgent.toLowerCase();
+
+    const isIOS =
+        /iphone|ipad|ipod/.test(userAgent);
+
+    const isSafari =
+        /safari/.test(userAgent) &&
+        !/chrome|crios|android/.test(userAgent);
+
+
+    if (isIOS) {
+
+        if (isSafari) {
+
+            showInstallHelp(`
+                <b>Установка на iPhone</b><br><br>
+
+                1️⃣ Нажми <b>«Поделиться»</b> в Safari.<br><br>
+
+                2️⃣ Выбери <b>«На экран Домой»</b>.<br><br>
+
+                3️⃣ Нажми <b>«Добавить»</b>.
+            `);
+
+        } else {
+
+            showInstallHelp(`
+                Открой «Бензин» именно в <b>Safari</b>.<br><br>
+
+                Затем:<br>
+                <b>«Поделиться» → «На экран Домой» → «Добавить»</b>
+            `);
+        }
+
+        return;
+    }
+
+
+    // Другие браузеры
+    showInstallHelp(`
+        Открой меню браузера и выбери
+        <b>«Установить приложение»</b>
+        или
+        <b>«Добавить на главный экран»</b>.
+    `);
+}
+
+
+// Показать инструкцию
+function showInstallHelp(text) {
+
+    if (!installInstructions || !installOverlay) {
+        return;
+    }
+
+    installInstructions.innerHTML = text;
+
+    installOverlay.classList.remove("hidden");
+}
+
+
+// Закрыть инструкцию
+function closeInstallHelp() {
+
+    installOverlay?.classList.add("hidden");
+}
+
+
+// После установки
+window.addEventListener("appinstalled", () => {
+
+    deferredPrompt = null;
+
+    installButton?.classList.add("hidden");
+});
+
+
+// Проверка при запуске
+function updateInstallButton() {
+
+    if (!installButton) return;
+
+    if (isStandalone()) {
+        installButton.classList.add("hidden");
+    } else {
+        installButton.classList.remove("hidden");
+    }
+}
+
+
+// Делаем функции доступными HTML
+window.installApp = installApp;
+window.closeInstallHelp = closeInstallHelp;
+
+
+// Запускаем проверку
+updateInstallButton();
