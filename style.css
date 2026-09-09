@@ -394,3 +394,84 @@ input:focus {
         font-size: 18px;
     }
 }
+/* ================================
+   УСТАНОВКА ПРИЛОЖЕНИЯ
+   ================================ */
+
+.install-button {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 16px 12px;
+    border: none;
+    border-radius: 15px;
+    background: #111;
+    color: white;
+    font-size: 16px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform .15s ease, opacity .15s ease;
+}
+
+.install-button:active {
+    transform: scale(.97);
+}
+
+.install-button.hidden {
+    display: none !important;
+}
+
+.install-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, .65);
+}
+
+.install-overlay.hidden {
+    display: none !important;
+}
+
+.install-content {
+    width: 100%;
+    max-width: 380px;
+    padding: 28px 22px;
+    border-radius: 22px;
+    background: white;
+    color: #111;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+
+.install-icon {
+    font-size: 55px;
+    margin-bottom: 10px;
+}
+
+.install-title {
+    font-size: 24px;
+    font-weight: 900;
+    margin-bottom: 18px;
+}
+
+.install-instructions {
+    font-size: 17px;
+    line-height: 1.5;
+    font-weight: 600;
+}
+
+.install-close {
+    width: 100%;
+    margin-top: 25px;
+    padding: 15px;
+    border: none;
+    border-radius: 14px;
+    background: #111;
+    color: white;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+}
