@@ -1,42 +1,124 @@
-<!DOCTYPE html><html lang="ru">
+<!DOCTYPE html>
+<html lang="ru">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#111111">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta
+        name="theme-color"
+        content="#111111"
+    >
+
+    <meta
+        name="description"
+        content="Общий трекер уровня бензина"
+    >
+
+    <link
+        rel="manifest"
+        href="manifest.json"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        href="icons/icon-192.png"
+    >
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
     <title>Бензин</title>
-    <link rel="stylesheet" href="style.css">
-</head><body>
-    <main class="app">    <header>
+</head>
+
+<body>
+
+<main class="app">
+
+    <header>
+
         <div class="logo">⛽</div>
+
         <div>
             <h1>Бензин</h1>
-            <p id="roomStatus">Локальный режим</p>
+            <p id="roomStatus">
+                Локальный режим
+            </p>
         </div>
+
     </header>
 
+
+    <!-- ТОПЛИВО -->
+
     <section class="fuel-card">
-        <span class="label">Сейчас в баке</span>
+
+        <span class="label">
+            Сейчас в баке
+        </span>
+
 
         <div class="fuel-value">
-            <span id="fuelAmount">0.0</span>
-            <span class="unit">л</span>
-        </div>
-<div class="fuel-gauge">
-    <div id="fuelLevel" class="fuel-level"></div>
-</div>
 
-<div class="fuel-percent">
-    <span id="fuelPercent">0%</span>
-</div>
+            <span id="fuelAmount">
+                0.0
+            </span>
+
+            <span class="unit">
+                л
+            </span>
+
+        </div>
+
+
+        <div class="fuel-gauge">
+
+            <div
+                id="fuelLevel"
+                class="fuel-level"
+            ></div>
+
+        </div>
+
+
+        <div class="fuel-percent">
+
+            <span id="fuelPercent">
+                0%
+            </span>
+
+        </div>
+
 
         <div class="buttons">
-            <button onclick="changeFuel(-5)">−5 л</button>
-            <button onclick="changeFuel(-1)">−1 л</button>
-            <button onclick="changeFuel(1)">+1 л</button>
-            <button onclick="changeFuel(5)">+5 л</button>
+
+            <button onclick="changeFuel(-5)">
+                −5 л
+            </button>
+
+            <button onclick="changeFuel(-1)">
+                −1 л
+            </button>
+
+            <button onclick="changeFuel(1)">
+                +1 л
+            </button>
+
+            <button onclick="changeFuel(5)">
+                +5 л
+            </button>
+
         </div>
 
+
         <div class="manual">
+
             <input
                 id="manualAmount"
                 type="number"
@@ -44,43 +126,157 @@
                 min="0"
                 placeholder="Точное количество"
             >
-            <button onclick="setFuel()">Установить</button>
+
+            <button onclick="setFuel()">
+                Установить
+            </button>
+
         </div>
+
     </section>
 
-    <section class="room-card">
-        <h2>Общий доступ</h2>
 
-        <button class="primary" onclick="createRoom()">
+    <!-- КОМНАТА -->
+
+    <section class="room-card">
+
+        <h2>
+            Общий доступ
+        </h2>
+
+
+        <button
+            class="primary"
+            onclick="createRoom()"
+        >
             Создать комнату
         </button>
 
+
         <div class="join">
+
             <input
                 id="roomCode"
                 type="text"
                 maxlength="6"
                 placeholder="Код комнаты"
             >
-            <button onclick="joinRoom()">Войти</button>
+
+            <button onclick="joinRoom()">
+                Войти
+            </button>
+
         </div>
 
-        <div id="currentRoom" class="current-room hidden">
-            Код комнаты:
-            <strong id="roomCodeDisplay"></strong>
+
+        <div
+            id="currentRoom"
+            class="current-room hidden"
+        >
+
+            <div>
+                Код комнаты:
+                <strong id="roomCodeDisplay"></strong>
+            </div>
+
+
+            <button
+                class="share-button"
+                onclick="shareRoom()"
+            >
+                🔗 Поделиться комнатой
+            </button>
+
         </div>
+
     </section>
+
+
+    <!-- НАСТРОЙКИ БАКА -->
+
+    <section class="settings-card">
+
+        <h2>
+            Настройки
+        </h2>
+
+
+        <label>
+            Объём бака
+        </label>
+
+
+        <div class="tank-setting">
+
+            <input
+                id="tankCapacity"
+                type="number"
+                min="1"
+                max="200"
+                step="1"
+                placeholder="60"
+            >
+
+            <span>
+                л
+            </span>
+
+            <button onclick="saveTankCapacity()">
+                Сохранить
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- ИСТОРИЯ -->
 
     <section class="history-card">
-        <h2>История</h2>
+
+        <h2>
+            История
+        </h2>
+
+
         <div id="history">
-            <p class="empty">Изменений пока нет</p>
+
+            <p class="empty">
+                Изменений пока нет
+            </p>
+
         </div>
+
     </section>
+
 
 </main>
 
-<script type="module" src="app.js?v=999"></script>
+
+<script
+    type="module"
+    src="app.js?v=2"
+></script>
+
+
+<script>
+
+if ("serviceWorker" in navigator) {
+
+    window.addEventListener(
+        "load",
+        () => {
+
+            navigator.serviceWorker.register(
+                "service-worker.js"
+            );
+
+        }
+    );
+
+}
+
+</script>
 
 </body>
 </html>
