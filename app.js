@@ -1,4 +1,6 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
+import {
+    initializeApp
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 
 import {
     getFirestore,
@@ -9,8 +11,7 @@ import {
     addDoc,
     query,
     orderBy,
-    limit,
-    getDoc
+    limit
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 import {
@@ -18,10 +19,6 @@ import {
     signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
-
-// ===============================
-// FIREBASE
-// ===============================
 
 const firebaseConfig = {
     apiKey: "AIzaSyDwcaEumdBQeaaar4lAH_hAxcTXx1nQ7v0",
@@ -32,14 +29,13 @@ const firebaseConfig = {
     appId: "1:884798326345:web:8a5e7ff77bd398fe66a198"
 };
 
+
 const app = initializeApp(firebaseConfig);
+
 const db = getFirestore(app);
+
 const auth = getAuth(app);
 
-
-// ===============================
-// СОСТОЯНИЕ
-// ===============================
 
 let fuel = 0;
 
@@ -54,12 +50,9 @@ let userName =
     localStorage.getItem("userName");
 
 let unsubscribeRoom = null;
+
 let unsubscribeHistory = null;
 
-
-// ===============================
-// ЭЛЕМЕНТЫ
-// ===============================
 
 const fuelAmount =
     document.getElementById("fuelAmount");
@@ -76,15 +69,15 @@ const historyElement =
 const tankCapacityInput =
     document.getElementById("tankCapacity");
 
+const sosOverlay =
+    document.getElementById("sosOverlay");
 
-// ===============================
-// ЗАПУСК
-// ===============================
 
 async function start() {
 
     if (tankCapacityInput) {
-        tankCapacityInput.value = tankCapacity;
+        tankCapacityInput.value =
+            tankCapacity;
     }
 
 
@@ -127,7 +120,6 @@ async function start() {
             render();
         }
 
-
     } catch (error) {
 
         console.error(
@@ -145,9 +137,7 @@ async function start() {
 }
 
 
-// ===============================
-// URL КОМНАТЫ
-// ===============================
+/* URL */
 
 function updateRoomUrl(code) {
 
@@ -162,9 +152,7 @@ function updateRoomUrl(code) {
 }
 
 
-// ===============================
-// ОТОБРАЖЕНИЕ
-// ===============================
+/* RENDER */
 
 function render() {
 
@@ -189,24 +177,16 @@ function render() {
         );
 
 
-    if (fuelLevel) {
-
-        fuelLevel.style.height =
-            `${percent}%`;
-    }
+    fuelLevel.style.height =
+        `${percent}%`;
 
 
-    if (fuelPercent) {
-
-        fuelPercent.textContent =
-            `${Math.round(percent)}%`;
-    }
+    fuelPercent.textContent =
+        `${Math.round(percent)}%`;
 }
 
 
-// ===============================
-// ИЗМЕНЕНИЕ БЕНЗИНА
-// ===============================
+/* FUEL */
 
 async function changeFuel(amount) {
 
@@ -244,10 +224,6 @@ async function changeFuel(amount) {
     }
 }
 
-
-// ===============================
-// УСТАНОВИТЬ БЕНЗИН
-// ===============================
 
 async function setFuel() {
 
@@ -308,10 +284,6 @@ async function setFuel() {
 }
 
 
-// ===============================
-// СОХРАНЕНИЕ БЕНЗИНА
-// ===============================
-
 async function updateFuel(
     newFuel,
     change
@@ -367,17 +339,14 @@ async function updateFuel(
 }
 
 
-// ===============================
-// ПОДКЛЮЧЕНИЕ К КОМНАТЕ
-// ===============================
+/* ROOM */
 
 function connectToRoom(code) {
-
-    // Отключаем старые listeners
 
     if (unsubscribeRoom) {
         unsubscribeRoom();
     }
+
 
     if (unsubscribeHistory) {
         unsubscribeHistory();
@@ -428,13 +397,8 @@ function connectToRoom(code) {
         );
 
 
-    // ===========================
-    // REALTIME КОМНАТЫ
-    // ===========================
-
     unsubscribeRoom =
         onSnapshot(
-
             roomRef,
 
             async (snapshot) => {
@@ -460,27 +424,35 @@ function connectToRoom(code) {
                                 data.tankCapacity
                             );
 
+
                         localStorage.setItem(
                             "tankCapacity",
                             tankCapacity
                         );
 
 
-                        if (tankCapacityInput) {
-
-                            tankCapacityInput.value =
-                                tankCapacity;
-                        }
+                        tankCapacityInput.value =
+                            tankCapacity;
                     }
 
 
                     render();
 
 
-                } else {
+                    /* SOS */
 
-                    // Если комнаты нет —
-                    // создаём её
+                    if (
+                        data.sos === true
+                    ) {
+
+                        showSOS();
+
+                    } else {
+
+                        hideSOS();
+                    }
+
+                } else {
 
                     await setDoc(
                         roomRef,
@@ -491,6 +463,8 @@ function connectToRoom(code) {
                                 Number(
                                     tankCapacity
                                 ),
+
+                            sos: false,
 
                             updatedAt:
                                 Date.now(),
@@ -522,32 +496,26 @@ function connectToRoom(code) {
         );
 
 
-    // ===========================
-    // ИСТОРИЯ
-    // ===========================
+    /* HISTORY */
 
     const historyQuery =
         query(
-
             collection(
                 db,
                 "rooms",
                 roomCode,
                 "history"
             ),
-
             orderBy(
                 "time",
                 "desc"
             ),
-
             limit(50)
         );
 
 
     unsubscribeHistory =
         onSnapshot(
-
             historyQuery,
 
             (snapshot) => {
@@ -597,9 +565,7 @@ function connectToRoom(code) {
 
 
                         div.innerHTML = `
-
                             <div>
-
                                 <div class="history-name">
                                     ${data.name}
                                 </div>
@@ -618,14 +584,11 @@ function connectToRoom(code) {
                                         }
                                     )}
                                 </div>
-
                             </div>
-
 
                             <div class="history-change">
                                 ${change}
                             </div>
-
                         `;
 
 
@@ -634,22 +597,12 @@ function connectToRoom(code) {
                         );
                     }
                 );
-            },
-
-            (error) => {
-
-                console.error(
-                    "History error:",
-                    error
-                );
             }
         );
 }
 
 
-// ===============================
-// СОЗДАТЬ КОМНАТУ
-// ===============================
+/* CREATE ROOM */
 
 function createRoom() {
 
@@ -688,9 +641,7 @@ function createRoom() {
 }
 
 
-// ===============================
-// ВОЙТИ В КОМНАТУ
-// ===============================
+/* JOIN */
 
 function joinRoom() {
 
@@ -740,9 +691,7 @@ function joinRoom() {
 }
 
 
-// ===============================
-// ПОДЕЛИТЬСЯ КОМНАТОЙ
-// ===============================
+/* SHARE */
 
 async function shareRoom() {
 
@@ -793,9 +742,6 @@ async function shareRoom() {
 
     } catch (error) {
 
-        // Пользователь мог просто
-        // закрыть окно «Поделиться»
-
         if (
             error.name !==
             "AbortError"
@@ -823,20 +769,14 @@ async function shareRoom() {
 }
 
 
-// ===============================
-// ОБЪЁМ БАКА
-// ===============================
+/* TANK */
 
 async function saveTankCapacity() {
 
-    const input =
-        document.getElementById(
-            "tankCapacity"
-        );
-
-
     const value =
-        Number(input.value);
+        Number(
+            tankCapacityInput.value
+        );
 
 
     if (
@@ -866,22 +806,16 @@ async function saveTankCapacity() {
     render();
 
 
-    // Если есть комната —
-    // сохраняем настройку
-    // для всех участников
-
     if (roomCode) {
 
         try {
 
             await setDoc(
-
                 doc(
                     db,
                     "rooms",
                     roomCode
                 ),
-
                 {
                     tankCapacity:
                         tankCapacity,
@@ -892,7 +826,6 @@ async function saveTankCapacity() {
                     updatedBy:
                         userName
                 },
-
                 {
                     merge: true
                 }
@@ -917,9 +850,120 @@ async function saveTankCapacity() {
 }
 
 
-// ===============================
-// КНОПКИ
-// ===============================
+/* SOS */
+
+async function triggerSOS() {
+
+    if (!roomCode) {
+
+        alert(
+            "Сначала создай или подключись к комнате."
+        );
+
+        return;
+    }
+
+
+    try {
+
+        await setDoc(
+            doc(
+                db,
+                "rooms",
+                roomCode
+            ),
+            {
+                sos:
+                    true,
+
+                sosBy:
+                    userName,
+
+                sosAt:
+                    Date.now()
+            },
+            {
+                merge: true
+            }
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Не удалось включить SOS."
+        );
+    }
+}
+
+
+async function cancelSOS() {
+
+    if (!roomCode) {
+        return;
+    }
+
+
+    try {
+
+        await setDoc(
+            doc(
+                db,
+                "rooms",
+                roomCode
+            ),
+            {
+                sos:
+                    false,
+
+                sosAt:
+                    Date.now(),
+
+                sosBy:
+                    userName
+            },
+            {
+                merge: true
+            }
+        );
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "Не удалось отключить SOS."
+        );
+    }
+}
+
+
+function showSOS() {
+
+    if (!sosOverlay) {
+        return;
+    }
+
+    sosOverlay.classList.remove(
+        "hidden"
+    );
+}
+
+
+function hideSOS() {
+
+    if (!sosOverlay) {
+        return;
+    }
+
+    sosOverlay.classList.add(
+        "hidden"
+    );
+}
+
+
+/* GLOBAL */
 
 window.changeFuel =
     changeFuel;
@@ -939,9 +983,11 @@ window.shareRoom =
 window.saveTankCapacity =
     saveTankCapacity;
 
+window.triggerSOS =
+    triggerSOS;
 
-// ===============================
-// ЗАПУСК
-// ===============================
+window.cancelSOS =
+    cancelSOS;
+
 
 start();
