@@ -24,7 +24,10 @@
         href="manifest.json"
     >
 
-    <link rel="apple-touch-icon" href="icon.png">
+    <link
+        rel="apple-touch-icon"
+        href="icon.png"
+    >
 
     <link
         rel="stylesheet"
@@ -44,6 +47,7 @@
 
         <div>
             <h1>Бензин</h1>
+
             <p id="roomStatus">
                 Локальный режим
             </p>
@@ -91,6 +95,16 @@
             </span>
 
         </div>
+
+
+        <!-- SOS -->
+
+        <button
+            class="sos-button"
+            onclick="triggerSOS()"
+        >
+            🚨 ПОРА ЗАПРАВЛЯТЬСЯ
+        </button>
 
 
         <div class="buttons">
@@ -189,7 +203,7 @@
     </section>
 
 
-    <!-- НАСТРОЙКИ БАКА -->
+    <!-- НАСТРОЙКИ -->
 
     <section class="settings-card">
 
@@ -246,13 +260,45 @@
 
     </section>
 
-
 </main>
+
+
+<!-- SOS OVERLAY -->
+
+<div
+    id="sosOverlay"
+    class="sos-overlay hidden"
+>
+
+    <div class="sos-content">
+
+        <div class="sos-icon">
+            🚨
+        </div>
+
+        <div class="sos-text">
+            SOS
+        </div>
+
+        <div class="sos-subtitle">
+            ПОРА ЗАПРАВЛЯТЬСЯ
+        </div>
+
+        <button
+            class="sos-close"
+            onclick="cancelSOS()"
+        >
+            ОТМЕНИТЬ SOS
+        </button>
+
+    </div>
+
+</div>
 
 
 <script
     type="module"
-    src="app.js?v=2"
+    src="app.js?v=3"
 ></script>
 
 
