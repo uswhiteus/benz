@@ -209,9 +209,11 @@ async function start() {
         debugError(error);
 
         alert(
-            "Ошибка подключения к Firebase.\n\n" +
-            error.message
-        );
+    "ОШИБКА FIREBASE:\n\n" +
+    error.code +
+    "\n\n" +
+    error.message
+);
     }
 }
 
