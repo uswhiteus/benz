@@ -9,7 +9,8 @@ import {
     addDoc,
     query,
     orderBy,
-    limit
+    limit,
+    getDoc
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-firestore.js";
 
 import {
@@ -17,6 +18,10 @@ import {
     signInAnonymously
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 
+
+// ===============================
+// FIREBASE
+// ===============================
 
 const firebaseConfig = {
     apiKey: "AIzaSyDwcaEumdBQeaaar4lAH_hAxcTXx1nQ7v0",
@@ -27,31 +32,28 @@ const firebaseConfig = {
     appId: "1:884798326345:web:8a5e7ff77bd398fe66a198"
 };
 
-
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
 
+// ===============================
+// СОСТОЯНИЕ
+// ===============================
+
 let fuel = 0;
 
-// Сначала пытаемся взять комнату из URL
-const urlParams = new URLSearchParams(
-    window.location.search
-);
-
 let roomCode =
-    urlParams.get("room");
-
-// Если в URL нет комнаты — берём из памяти браузера
-if (!roomCode) {
-    roomCode =
-        localStorage.getItem("roomCode");
-}
+    new URLSearchParams(window.location.search).get("room") ||
+    localStorage.getItem("roomCode");
 
 let userName =
     localStorage.getItem("userName");
 
+
+// ===============================
+// ЭЛЕМЕНТЫ
+// ===============================
 
 const fuelAmount =
     document.getElementById("fuelAmount");
@@ -60,7 +62,79 @@ const historyElement =
     document.getElementById("history");
 
 
+// ===============================
+// ДИАГНОСТИКА
+// ===============================
+
+function debug(message) {
+
+    console.log("[DEBUG]", message);
+
+    let box =
+        document.getElementById("debugBox");
+
+    if (!box) {
+
+        box = document.createElement("div");
+
+        box.id = "debugBox";
+
+        box.style.cssText = `
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            background: #111;
+            color: #0f0;
+            padding: 12px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 99999;
+            max-height: 180px;
+            overflow: auto;
+            white-space: pre-wrap;
+        `;
+
+        document.body.appendChild(box);
+    }
+
+    box.textContent +=
+        "\n" + message;
+}
+
+
+function debugError(error) {
+
+    console.error(error);
+
+    debug(
+        "ОШИБКА: " +
+        (error?.message || error)
+    );
+}
+
+
+// ===============================
+// START
+// ===============================
+
 async function start() {
+
+    debug("APP START");
+
+    debug(
+        "URL: " +
+        window.location.href
+    );
+
+    debug(
+        "Комната из URL/localStorage: " +
+        roomCode
+    );
+
+
+    // Имя пользователя
 
     if (!userName) {
 
@@ -74,11 +148,26 @@ async function start() {
         );
     }
 
+    debug(
+        "Имя: " +
+        userName
+    );
+
 
     try {
 
+        debug(
+            "Подключаем Firebase Auth..."
+        );
+
         await signInAnonymously(auth);
 
+        debug(
+            "Firebase Auth OK"
+        );
+
+
+        // Если комната найдена
 
         if (roomCode) {
 
@@ -87,14 +176,17 @@ async function start() {
                     .trim()
                     .toUpperCase();
 
-            // Сохраняем комнату локально
             localStorage.setItem(
                 "roomCode",
                 roomCode
             );
 
-            // И сохраняем её в URL
             updateRoomUrl(
+                roomCode
+            );
+
+            debug(
+                "Подключаемся к комнате: " +
                 roomCode
             );
 
@@ -104,22 +196,29 @@ async function start() {
 
         } else {
 
+            debug(
+                "Комната не найдена"
+            );
+
             render();
         }
 
 
     } catch (error) {
 
-        console.error(
-            error
-        );
+        debugError(error);
 
         alert(
-            "Ошибка подключения к Firebase."
+            "Ошибка подключения к Firebase.\n\n" +
+            error.message
         );
     }
 }
 
+
+// ===============================
+// URL
+// ===============================
 
 function updateRoomUrl(code) {
 
@@ -131,8 +230,17 @@ function updateRoomUrl(code) {
         "",
         newUrl
     );
+
+    debug(
+        "URL комнаты установлен: " +
+        newUrl
+    );
 }
 
+
+// ===============================
+// ОТОБРАЖЕНИЕ
+// ===============================
 
 function render() {
 
@@ -141,7 +249,6 @@ function render() {
 
     const maxFuel =
         60;
-
 
     fuelAmount.textContent =
         amount.toFixed(1);
@@ -162,7 +269,6 @@ function render() {
             "fuelLevel"
         );
 
-
     if (fuelLevel) {
 
         fuelLevel.style.height =
@@ -175,7 +281,6 @@ function render() {
             "fuelPercent"
         );
 
-
     if (fuelPercent) {
 
         fuelPercent.textContent =
@@ -183,6 +288,10 @@ function render() {
     }
 }
 
+
+// ===============================
+// ИЗМЕНЕНИЕ ТОПЛИВА
+// ===============================
 
 async function changeFuel(amount) {
 
@@ -204,12 +313,33 @@ async function changeFuel(amount) {
         );
 
 
-    await updateFuel(
-        newFuel,
-        Number(amount)
+    debug(
+        `Изменяем топливо: ${fuel} → ${newFuel}`
     );
+
+
+    try {
+
+        await updateFuel(
+            newFuel,
+            Number(amount)
+        );
+
+    } catch (error) {
+
+        debugError(error);
+
+        alert(
+            "Ошибка изменения топлива:\n" +
+            error.message
+        );
+    }
 }
 
+
+// ===============================
+// УСТАНОВКА ТОЧНОГО КОЛИЧЕСТВА
+// ===============================
 
 async function setFuel() {
 
@@ -247,23 +377,44 @@ async function setFuel() {
 
 
     const change =
-        value - Number(fuel);
+        value -
+        Number(fuel);
 
 
-    await updateFuel(
-        value,
-        change
-    );
+    try {
 
+        await updateFuel(
+            value,
+            change
+        );
 
-    input.value = "";
+        input.value = "";
+
+    } catch (error) {
+
+        debugError(error);
+
+        alert(
+            "Ошибка сохранения:\n" +
+            error.message
+        );
+    }
 }
 
+
+// ===============================
+// СОХРАНЕНИЕ В FIREBASE
+// ===============================
 
 async function updateFuel(
     newFuel,
     change
 ) {
+
+    debug(
+        "Сохраняем в Firebase..."
+    );
+
 
     const roomRef =
         doc(
@@ -291,6 +442,12 @@ async function updateFuel(
     );
 
 
+    debug(
+        "Firebase: топливо сохранено = " +
+        newFuel
+    );
+
+
     await addDoc(
         collection(
             db,
@@ -309,8 +466,17 @@ async function updateFuel(
                 Date.now()
         }
     );
+
+
+    debug(
+        "История сохранена"
+    );
 }
 
+
+// ===============================
+// ПОДКЛЮЧЕНИЕ К КОМНАТЕ
+// ===============================
 
 function connectToRoom(code) {
 
@@ -350,6 +516,12 @@ function connectToRoom(code) {
         roomCode;
 
 
+    debug(
+        "ROOM: " +
+        roomCode
+    );
+
+
     const roomRef =
         doc(
             db,
@@ -358,16 +530,44 @@ function connectToRoom(code) {
         );
 
 
-    // Получаем данные комнаты
-    onSnapshot(
-        roomRef,
+    // =================================
+    // СНАЧАЛА ДЕЛАЕМ ОДИН ПРЯМОЙ READ
+    // =================================
 
-        async (snapshot) => {
+    getDoc(roomRef)
+        .then((snapshot) => {
+
+            debug(
+                "Прямое чтение Firestore выполнено"
+            );
+
+
+            debug(
+                "exists = " +
+                snapshot.exists()
+            );
+
 
             if (snapshot.exists()) {
 
                 const data =
                     snapshot.data();
+
+
+                debug(
+                    "ДАННЫЕ FIREBASE:\n" +
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    )
+                );
+
+
+                debug(
+                    "fuel = " +
+                    data.fuel
+                );
 
 
                 fuel =
@@ -376,62 +576,125 @@ function connectToRoom(code) {
                     );
 
 
+                debug(
+                    "Устанавливаем fuel = " +
+                    fuel
+                );
+
+
                 render();
 
             } else {
 
-                // Комнаты ещё нет —
-                // создаём её с 0 л
-                await setDoc(
-                    roomRef,
-                    {
-                        fuel: 0,
-                        updatedAt:
-                            Date.now(),
-                        updatedBy:
-                            userName
-                    }
+                debug(
+                    "ДОКУМЕНТ КОМНАТЫ НЕ СУЩЕСТВУЕТ"
+                );
+            }
+
+        })
+        .catch((error) => {
+
+            debugError(error);
+        });
+
+
+    // =================================
+    // REALTIME LISTENER
+    // =================================
+
+    onSnapshot(
+
+        roomRef,
+
+        (snapshot) => {
+
+            debug(
+                "Realtime snapshot получен"
+            );
+
+
+            debug(
+                "snapshot.exists = " +
+                snapshot.exists()
+            );
+
+
+            if (snapshot.exists()) {
+
+                const data =
+                    snapshot.data();
+
+
+                debug(
+                    "Realtime data:\n" +
+                    JSON.stringify(
+                        data,
+                        null,
+                        2
+                    )
                 );
 
 
-                fuel = 0;
+                fuel =
+                    Number(
+                        data.fuel ?? 0
+                    );
+
+
+                debug(
+                    "Realtime fuel = " +
+                    fuel
+                );
+
 
                 render();
+
+            } else {
+
+                debug(
+                    "Realtime: комнаты нет"
+                );
             }
         },
 
+
         (error) => {
 
-            console.error(
-                "Ошибка комнаты:",
-                error
-            );
+            debugError(error);
 
             alert(
-                "Ошибка загрузки комнаты."
+                "Ошибка realtime подключения:\n" +
+                error.message
             );
         }
     );
 
 
-    // История
+    // =================================
+    // ИСТОРИЯ
+    // =================================
+
     const historyQuery =
         query(
+
             collection(
                 db,
                 "rooms",
                 roomCode,
                 "history"
             ),
+
             orderBy(
                 "time",
                 "desc"
             ),
+
             limit(50)
         );
 
 
     onSnapshot(
+
         historyQuery,
 
         (snapshot) => {
@@ -481,7 +744,9 @@ function connectToRoom(code) {
 
 
                     div.innerHTML = `
+
                         <div>
+
                             <div class="history-name">
                                 ${data.name}
                             </div>
@@ -494,16 +759,20 @@ function connectToRoom(code) {
                                     {
                                         hour:
                                             "2-digit",
+
                                         minute:
                                             "2-digit"
                                     }
                                 )}
                             </div>
+
                         </div>
+
 
                         <div class="history-change">
                             ${change}
                         </div>
+
                     `;
 
 
@@ -512,10 +781,19 @@ function connectToRoom(code) {
                     );
                 }
             );
+        },
+
+        (error) => {
+
+            debugError(error);
         }
     );
 }
 
+
+// ===============================
+// СОЗДАТЬ КОМНАТУ
+// ===============================
 
 function createRoom() {
 
@@ -527,6 +805,15 @@ function createRoom() {
                 8
             )
             .toUpperCase();
+
+
+    debug(
+        "Создаём новую комнату: " +
+        code
+    );
+
+
+    fuel = 0;
 
 
     localStorage.setItem(
@@ -550,6 +837,10 @@ function createRoom() {
     );
 }
 
+
+// ===============================
+// ВОЙТИ В КОМНАТУ
+// ===============================
 
 function joinRoom() {
 
@@ -577,6 +868,12 @@ function joinRoom() {
     }
 
 
+    debug(
+        "Входим в комнату: " +
+        code
+    );
+
+
     localStorage.setItem(
         "roomCode",
         code
@@ -599,6 +896,10 @@ function joinRoom() {
 }
 
 
+// ===============================
+// КНОПКИ
+// ===============================
+
 window.changeFuel =
     changeFuel;
 
@@ -611,5 +912,9 @@ window.createRoom =
 window.joinRoom =
     joinRoom;
 
+
+// ===============================
+// ЗАПУСК
+// ===============================
 
 start();
