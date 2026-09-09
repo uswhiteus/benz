@@ -34,13 +34,11 @@ header {
     align-items: center;
     justify-content: center;
     font-size: 27px;
-    box-shadow: 0 5px 15px rgba(0,0,0,.15);
 }
 
 header h1 {
     margin: 0;
     font-size: 27px;
-    letter-spacing: -0.5px;
 }
 
 header p {
@@ -66,10 +64,6 @@ h2 {
 
 /* FUEL */
 
-.fuel-card {
-    padding-top: 22px;
-}
-
 .label {
     display: block;
     text-align: center;
@@ -83,14 +77,12 @@ h2 {
     font-size: 58px;
     line-height: 1;
     font-weight: 800;
-    letter-spacing: -2px;
     margin: 10px 0 16px;
 }
 
 .fuel-value .unit {
     font-size: 24px;
     font-weight: 500;
-    letter-spacing: 0;
 }
 
 /* GAUGE */
@@ -118,12 +110,29 @@ h2 {
 
 .fuel-percent {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
     font-size: 15px;
     font-weight: 700;
 }
 
-/* BUTTONS */
+/* SOS BUTTON */
+
+.sos-button {
+    width: 100%;
+    margin-bottom: 12px;
+    padding: 17px 12px;
+    border-radius: 15px;
+    background: #111;
+    color: white;
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.sos-button:active {
+    transform: scale(.97);
+}
+
+/* NORMAL BUTTONS */
 
 .buttons {
     display: grid;
@@ -140,24 +149,25 @@ button {
     background: #ededed;
     color: #111;
     cursor: pointer;
-    transition: transform .1s, background .15s;
 }
 
 button:active {
     transform: scale(.96);
 }
 
-.primary {
-    width: 100%;
-    background: #111;
-    color: #fff;
-    margin-bottom: 11px;
-}
-
-.join {
+.manual {
     display: flex;
     gap: 8px;
+    margin-top: 10px;
 }
+
+.manual button {
+    background: #111;
+    color: white;
+    white-space: nowrap;
+}
+
+/* INPUTS */
 
 input {
     width: 100%;
@@ -174,9 +184,23 @@ input:focus {
     border-color: #111;
 }
 
+/* ROOM */
+
+.primary {
+    width: 100%;
+    background: #111;
+    color: white;
+    margin-bottom: 11px;
+}
+
+.join {
+    display: flex;
+    gap: 8px;
+}
+
 .join button {
     background: #111;
-    color: #fff;
+    color: white;
     min-width: 82px;
 }
 
@@ -197,25 +221,11 @@ input:focus {
 
 .share-button {
     width: 100%;
-    background: #fff;
+    background: white;
     border: 1px solid #ddd;
 }
 
-/* MANUAL */
-
-.manual {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.manual button {
-    background: #111;
-    color: #fff;
-    white-space: nowrap;
-}
-
-/* TANK */
+/* SETTINGS */
 
 .settings-card label {
     display: block;
@@ -240,7 +250,7 @@ input:focus {
 
 .tank-setting button {
     background: #111;
-    color: #fff;
+    color: white;
     white-space: nowrap;
 }
 
@@ -275,10 +285,78 @@ input:focus {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
-/* SMALL SCREENS */
+/* SOS OVERLAY */
+
+.sos-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(255, 0, 0, .92);
+
+    animation: siren 0.65s infinite alternate;
+}
+
+.sos-content {
+    width: 100%;
+    text-align: center;
+    color: white;
+    padding: 25px;
+}
+
+.sos-icon {
+    font-size: 55px;
+    margin-bottom: 5px;
+}
+
+.sos-text {
+    font-size: 110px;
+    line-height: .9;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-shadow: 0 4px 0 rgba(0,0,0,.2);
+}
+
+.sos-subtitle {
+    margin-top: 18px;
+    font-size: 22px;
+    font-weight: 900;
+}
+
+.sos-close {
+    margin-top: 35px;
+    padding: 16px 25px;
+    background: white;
+    color: #111;
+    font-size: 15px;
+    font-weight: 900;
+}
+
+/* SIREN EFFECT */
+
+@keyframes siren {
+
+    0% {
+        background: rgba(255, 0, 0, .95);
+    }
+
+    50% {
+        background: rgba(255, 255, 255, .95);
+    }
+
+    100% {
+        background: rgba(255, 0, 0, .95);
+    }
+}
+
+/* MOBILE */
 
 @media (max-width: 380px) {
 
@@ -306,5 +384,13 @@ input:focus {
 
     .tank-setting input {
         min-width: 120px;
+    }
+
+    .sos-text {
+        font-size: 80px;
+    }
+
+    .sos-subtitle {
+        font-size: 18px;
     }
 }
