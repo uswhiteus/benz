@@ -43,12 +43,18 @@ const auth = getAuth(app);
 
 let fuel = 0;
 
+let tankCapacity =
+    Number(localStorage.getItem("tankCapacity")) || 60;
+
 let roomCode =
     new URLSearchParams(window.location.search).get("room") ||
     localStorage.getItem("roomCode");
 
 let userName =
     localStorage.getItem("userName");
+
+let unsubscribeRoom = null;
+let unsubscribeHistory = null;
 
 
 // ===============================
@@ -58,83 +64,29 @@ let userName =
 const fuelAmount =
     document.getElementById("fuelAmount");
 
+const fuelLevel =
+    document.getElementById("fuelLevel");
+
+const fuelPercent =
+    document.getElementById("fuelPercent");
+
 const historyElement =
     document.getElementById("history");
 
-
-// ===============================
-// ДИАГНОСТИКА
-// ===============================
-
-function debug(message) {
-
-    console.log("[DEBUG]", message);
-
-    let box =
-        document.getElementById("debugBox");
-
-    if (!box) {
-
-        box = document.createElement("div");
-
-        box.id = "debugBox";
-
-        box.style.cssText = `
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
-            background: #111;
-            color: #0f0;
-            padding: 12px;
-            border-radius: 10px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 99999;
-            max-height: 180px;
-            overflow: auto;
-            white-space: pre-wrap;
-        `;
-
-        document.body.appendChild(box);
-    }
-
-    box.textContent +=
-        "\n" + message;
-}
-
-
-function debugError(error) {
-
-    console.error(error);
-
-    debug(
-        "ОШИБКА: " +
-        (error?.message || error)
-    );
-}
+const tankCapacityInput =
+    document.getElementById("tankCapacity");
 
 
 // ===============================
-// START
+// ЗАПУСК
 // ===============================
 
 async function start() {
 
-    debug("APP START");
+    if (tankCapacityInput) {
+        tankCapacityInput.value = tankCapacity;
+    }
 
-    debug(
-        "URL: " +
-        window.location.href
-    );
-
-    debug(
-        "Комната из URL/localStorage: " +
-        roomCode
-    );
-
-
-    // Имя пользователя
 
     if (!userName) {
 
@@ -148,26 +100,11 @@ async function start() {
         );
     }
 
-    debug(
-        "Имя: " +
-        userName
-    );
-
 
     try {
 
-        debug(
-            "Подключаем Firebase Auth..."
-        );
-
         await signInAnonymously(auth);
 
-        debug(
-            "Firebase Auth OK"
-        );
-
-
-        // Если комната найдена
 
         if (roomCode) {
 
@@ -181,24 +118,11 @@ async function start() {
                 roomCode
             );
 
-            updateRoomUrl(
-                roomCode
-            );
+            updateRoomUrl(roomCode);
 
-            debug(
-                "Подключаемся к комнате: " +
-                roomCode
-            );
-
-            connectToRoom(
-                roomCode
-            );
+            connectToRoom(roomCode);
 
         } else {
-
-            debug(
-                "Комната не найдена"
-            );
 
             render();
         }
@@ -206,20 +130,23 @@ async function start() {
 
     } catch (error) {
 
-        debugError(error);
+        console.error(
+            "Firebase error:",
+            error
+        );
 
         alert(
-    "ОШИБКА FIREBASE:\n\n" +
-    error.code +
-    "\n\n" +
-    error.message
-);
+            "Ошибка подключения к Firebase.\n\n" +
+            error.code +
+            "\n" +
+            error.message
+        );
     }
 }
 
 
 // ===============================
-// URL
+// URL КОМНАТЫ
 // ===============================
 
 function updateRoomUrl(code) {
@@ -232,11 +159,6 @@ function updateRoomUrl(code) {
         "",
         newUrl
     );
-
-    debug(
-        "URL комнаты установлен: " +
-        newUrl
-    );
 }
 
 
@@ -247,10 +169,11 @@ function updateRoomUrl(code) {
 function render() {
 
     const amount =
-        Number(fuel);
+        Number(fuel) || 0;
 
-    const maxFuel =
-        60;
+    const capacity =
+        Number(tankCapacity) || 60;
+
 
     fuelAmount.textContent =
         amount.toFixed(1);
@@ -261,15 +184,10 @@ function render() {
             100,
             Math.max(
                 0,
-                (amount / maxFuel) * 100
+                (amount / capacity) * 100
             )
         );
 
-
-    const fuelLevel =
-        document.getElementById(
-            "fuelLevel"
-        );
 
     if (fuelLevel) {
 
@@ -277,11 +195,6 @@ function render() {
             `${percent}%`;
     }
 
-
-    const fuelPercent =
-        document.getElementById(
-            "fuelPercent"
-        );
 
     if (fuelPercent) {
 
@@ -292,7 +205,7 @@ function render() {
 
 
 // ===============================
-// ИЗМЕНЕНИЕ ТОПЛИВА
+// ИЗМЕНЕНИЕ БЕНЗИНА
 // ===============================
 
 async function changeFuel(amount) {
@@ -310,37 +223,30 @@ async function changeFuel(amount) {
     const newFuel =
         Math.max(
             0,
-            Number(fuel) +
-            Number(amount)
+            Number(fuel) + Number(amount)
         );
-
-
-    debug(
-        `Изменяем топливо: ${fuel} → ${newFuel}`
-    );
 
 
     try {
 
         await updateFuel(
             newFuel,
-            Number(amount)
+            amount
         );
 
     } catch (error) {
 
-        debugError(error);
+        console.error(error);
 
         alert(
-            "Ошибка изменения топлива:\n" +
-            error.message
+            "Не удалось сохранить изменение."
         );
     }
 }
 
 
 // ===============================
-// УСТАНОВКА ТОЧНОГО КОЛИЧЕСТВА
+// УСТАНОВИТЬ БЕНЗИН
 // ===============================
 
 async function setFuel() {
@@ -379,8 +285,7 @@ async function setFuel() {
 
 
     const change =
-        value -
-        Number(fuel);
+        value - Number(fuel);
 
 
     try {
@@ -394,29 +299,23 @@ async function setFuel() {
 
     } catch (error) {
 
-        debugError(error);
+        console.error(error);
 
         alert(
-            "Ошибка сохранения:\n" +
-            error.message
+            "Не удалось сохранить значение."
         );
     }
 }
 
 
 // ===============================
-// СОХРАНЕНИЕ В FIREBASE
+// СОХРАНЕНИЕ БЕНЗИНА
 // ===============================
 
 async function updateFuel(
     newFuel,
     change
 ) {
-
-    debug(
-        "Сохраняем в Firebase..."
-    );
-
 
     const roomRef =
         doc(
@@ -432,6 +331,9 @@ async function updateFuel(
             fuel:
                 Number(newFuel),
 
+            tankCapacity:
+                Number(tankCapacity),
+
             updatedAt:
                 Date.now(),
 
@@ -441,12 +343,6 @@ async function updateFuel(
         {
             merge: true
         }
-    );
-
-
-    debug(
-        "Firebase: топливо сохранено = " +
-        newFuel
     );
 
 
@@ -468,11 +364,6 @@ async function updateFuel(
                 Date.now()
         }
     );
-
-
-    debug(
-        "История сохранена"
-    );
 }
 
 
@@ -481,6 +372,17 @@ async function updateFuel(
 // ===============================
 
 function connectToRoom(code) {
+
+    // Отключаем старые listeners
+
+    if (unsubscribeRoom) {
+        unsubscribeRoom();
+    }
+
+    if (unsubscribeHistory) {
+        unsubscribeHistory();
+    }
+
 
     roomCode =
         code
@@ -518,12 +420,6 @@ function connectToRoom(code) {
         roomCode;
 
 
-    debug(
-        "ROOM: " +
-        roomCode
-    );
-
-
     const roomRef =
         doc(
             db,
@@ -532,149 +428,103 @@ function connectToRoom(code) {
         );
 
 
-    // =================================
-    // СНАЧАЛА ДЕЛАЕМ ОДИН ПРЯМОЙ READ
-    // =================================
+    // ===========================
+    // REALTIME КОМНАТЫ
+    // ===========================
 
-    getDoc(roomRef)
-        .then((snapshot) => {
+    unsubscribeRoom =
+        onSnapshot(
 
-            debug(
-                "Прямое чтение Firestore выполнено"
-            );
+            roomRef,
 
+            async (snapshot) => {
 
-            debug(
-                "exists = " +
-                snapshot.exists()
-            );
+                if (snapshot.exists()) {
 
-
-            if (snapshot.exists()) {
-
-                const data =
-                    snapshot.data();
+                    const data =
+                        snapshot.data();
 
 
-                debug(
-                    "ДАННЫЕ FIREBASE:\n" +
-                    JSON.stringify(
-                        data,
-                        null,
-                        2
-                    )
-                );
+                    fuel =
+                        Number(
+                            data.fuel ?? 0
+                        );
 
 
-                debug(
-                    "fuel = " +
-                    data.fuel
-                );
+                    if (
+                        data.tankCapacity
+                    ) {
+
+                        tankCapacity =
+                            Number(
+                                data.tankCapacity
+                            );
+
+                        localStorage.setItem(
+                            "tankCapacity",
+                            tankCapacity
+                        );
 
 
-                fuel =
-                    Number(
-                        data.fuel ?? 0
+                        if (tankCapacityInput) {
+
+                            tankCapacityInput.value =
+                                tankCapacity;
+                        }
+                    }
+
+
+                    render();
+
+
+                } else {
+
+                    // Если комнаты нет —
+                    // создаём её
+
+                    await setDoc(
+                        roomRef,
+                        {
+                            fuel: 0,
+
+                            tankCapacity:
+                                Number(
+                                    tankCapacity
+                                ),
+
+                            updatedAt:
+                                Date.now(),
+
+                            updatedBy:
+                                userName
+                        }
                     );
 
 
-                debug(
-                    "Устанавливаем fuel = " +
-                    fuel
+                    fuel = 0;
+
+                    render();
+                }
+            },
+
+            (error) => {
+
+                console.error(
+                    "Room listener error:",
+                    error
                 );
 
-
-                render();
-
-            } else {
-
-                debug(
-                    "ДОКУМЕНТ КОМНАТЫ НЕ СУЩЕСТВУЕТ"
-                );
-            }
-
-        })
-        .catch((error) => {
-
-            debugError(error);
-        });
-
-
-    // =================================
-    // REALTIME LISTENER
-    // =================================
-
-    onSnapshot(
-
-        roomRef,
-
-        (snapshot) => {
-
-            debug(
-                "Realtime snapshot получен"
-            );
-
-
-            debug(
-                "snapshot.exists = " +
-                snapshot.exists()
-            );
-
-
-            if (snapshot.exists()) {
-
-                const data =
-                    snapshot.data();
-
-
-                debug(
-                    "Realtime data:\n" +
-                    JSON.stringify(
-                        data,
-                        null,
-                        2
-                    )
-                );
-
-
-                fuel =
-                    Number(
-                        data.fuel ?? 0
-                    );
-
-
-                debug(
-                    "Realtime fuel = " +
-                    fuel
-                );
-
-
-                render();
-
-            } else {
-
-                debug(
-                    "Realtime: комнаты нет"
+                alert(
+                    "Ошибка загрузки комнаты:\n" +
+                    error.message
                 );
             }
-        },
+        );
 
 
-        (error) => {
-
-            debugError(error);
-
-            alert(
-                "Ошибка realtime подключения:\n" +
-                error.message
-            );
-        }
-    );
-
-
-    // =================================
+    // ===========================
     // ИСТОРИЯ
-    // =================================
+    // ===========================
 
     const historyQuery =
         query(
@@ -695,101 +545,105 @@ function connectToRoom(code) {
         );
 
 
-    onSnapshot(
+    unsubscribeHistory =
+        onSnapshot(
 
-        historyQuery,
+            historyQuery,
 
-        (snapshot) => {
-
-            historyElement.innerHTML =
-                "";
-
-
-            if (snapshot.empty) {
+            (snapshot) => {
 
                 historyElement.innerHTML =
-                    '<p class="empty">Изменений пока нет</p>';
-
-                return;
-            }
+                    "";
 
 
-            snapshot.forEach(
-                (item) => {
+                if (snapshot.empty) {
 
-                    const data =
-                        item.data();
+                    historyElement.innerHTML =
+                        '<p class="empty">Изменений пока нет</p>';
 
-
-                    const div =
-                        document.createElement(
-                            "div"
-                        );
+                    return;
+                }
 
 
-                    div.className =
-                        "history-item";
+                snapshot.forEach(
+                    (item) => {
+
+                        const data =
+                            item.data();
 
 
-                    const change =
-                        Number(
-                            data.change
-                        ) >= 0
-
-                        ? `+${Number(
-                            data.change
-                        ).toFixed(1)} л`
-
-                        : `${Number(
-                            data.change
-                        ).toFixed(1)} л`;
+                        const div =
+                            document.createElement(
+                                "div"
+                            );
 
 
-                    div.innerHTML = `
+                        div.className =
+                            "history-item";
 
-                        <div>
 
-                            <div class="history-name">
-                                ${data.name}
-                            </div>
+                        const change =
+                            Number(
+                                data.change
+                            ) >= 0
+
+                            ? `+${Number(
+                                data.change
+                            ).toFixed(1)} л`
+
+                            : `${Number(
+                                data.change
+                            ).toFixed(1)} л`;
+
+
+                        div.innerHTML = `
 
                             <div>
-                                ${new Date(
-                                    data.time
-                                ).toLocaleTimeString(
-                                    "ru-RU",
-                                    {
-                                        hour:
-                                            "2-digit",
 
-                                        minute:
-                                            "2-digit"
-                                    }
-                                )}
+                                <div class="history-name">
+                                    ${data.name}
+                                </div>
+
+                                <div>
+                                    ${new Date(
+                                        data.time
+                                    ).toLocaleTimeString(
+                                        "ru-RU",
+                                        {
+                                            hour:
+                                                "2-digit",
+
+                                            minute:
+                                                "2-digit"
+                                        }
+                                    )}
+                                </div>
+
                             </div>
 
-                        </div>
+
+                            <div class="history-change">
+                                ${change}
+                            </div>
+
+                        `;
 
 
-                        <div class="history-change">
-                            ${change}
-                        </div>
+                        historyElement.appendChild(
+                            div
+                        );
+                    }
+                );
+            },
 
-                    `;
+            (error) => {
 
-
-                    historyElement.appendChild(
-                        div
-                    );
-                }
-            );
-        },
-
-        (error) => {
-
-            debugError(error);
-        }
-    );
+                console.error(
+                    "History error:",
+                    error
+                );
+            }
+        );
 }
 
 
@@ -807,12 +661,6 @@ function createRoom() {
                 8
             )
             .toUpperCase();
-
-
-    debug(
-        "Создаём новую комнату: " +
-        code
-    );
 
 
     fuel = 0;
@@ -870,12 +718,6 @@ function joinRoom() {
     }
 
 
-    debug(
-        "Входим в комнату: " +
-        code
-    );
-
-
     localStorage.setItem(
         "roomCode",
         code
@@ -899,6 +741,183 @@ function joinRoom() {
 
 
 // ===============================
+// ПОДЕЛИТЬСЯ КОМНАТОЙ
+// ===============================
+
+async function shareRoom() {
+
+    if (!roomCode) {
+
+        alert(
+            "Сначала подключись к комнате."
+        );
+
+        return;
+    }
+
+
+    const url =
+        `${window.location.origin}` +
+        `${window.location.pathname}` +
+        `?room=${roomCode}`;
+
+
+    try {
+
+        if (
+            navigator.share
+        ) {
+
+            await navigator.share({
+
+                title:
+                    "Бензин",
+
+                text:
+                    `Подключись к моей комнате ${roomCode}`,
+
+                url:
+                    url
+            });
+
+        } else {
+
+            await navigator.clipboard.writeText(
+                url
+            );
+
+            alert(
+                "Ссылка скопирована!"
+            );
+        }
+
+    } catch (error) {
+
+        // Пользователь мог просто
+        // закрыть окно «Поделиться»
+
+        if (
+            error.name !==
+            "AbortError"
+        ) {
+
+            try {
+
+                await navigator.clipboard.writeText(
+                    url
+                );
+
+                alert(
+                    "Ссылка скопирована!"
+                );
+
+            } catch {
+
+                prompt(
+                    "Скопируй ссылку:",
+                    url
+                );
+            }
+        }
+    }
+}
+
+
+// ===============================
+// ОБЪЁМ БАКА
+// ===============================
+
+async function saveTankCapacity() {
+
+    const input =
+        document.getElementById(
+            "tankCapacity"
+        );
+
+
+    const value =
+        Number(input.value);
+
+
+    if (
+        isNaN(value) ||
+        value <= 0 ||
+        value > 200
+    ) {
+
+        alert(
+            "Объём бака должен быть от 1 до 200 литров."
+        );
+
+        return;
+    }
+
+
+    tankCapacity =
+        value;
+
+
+    localStorage.setItem(
+        "tankCapacity",
+        tankCapacity
+    );
+
+
+    render();
+
+
+    // Если есть комната —
+    // сохраняем настройку
+    // для всех участников
+
+    if (roomCode) {
+
+        try {
+
+            await setDoc(
+
+                doc(
+                    db,
+                    "rooms",
+                    roomCode
+                ),
+
+                {
+                    tankCapacity:
+                        tankCapacity,
+
+                    updatedAt:
+                        Date.now(),
+
+                    updatedBy:
+                        userName
+                },
+
+                {
+                    merge: true
+                }
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Не удалось сохранить объём бака."
+            );
+
+            return;
+        }
+    }
+
+
+    alert(
+        `Объём бака установлен: ${tankCapacity} л`
+    );
+}
+
+
+// ===============================
 // КНОПКИ
 // ===============================
 
@@ -913,6 +932,12 @@ window.createRoom =
 
 window.joinRoom =
     joinRoom;
+
+window.shareRoom =
+    shareRoom;
+
+window.saveTankCapacity =
+    saveTankCapacity;
 
 
 // ===============================
