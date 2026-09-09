@@ -53,7 +53,48 @@
             </p>
         </div>
 
-    </header>
+        </header>
+
+
+    <!-- УСТАНОВКА ПРИЛОЖЕНИЯ -->
+
+    <button
+        id="installButton"
+        class="install-button"
+        onclick="installApp()"
+    >
+        📲 УСТАНОВИТЬ ПРИЛОЖЕНИЕ
+    </button>
+
+
+    <div
+        id="installOverlay"
+        class="install-overlay hidden"
+    >
+        <div class="install-content">
+
+            <div class="install-icon">
+                📲
+            </div>
+
+            <div class="install-title">
+                Установить «Бензин»
+            </div>
+
+            <div
+                id="installInstructions"
+                class="install-instructions"
+            ></div>
+
+            <button
+                class="install-close"
+                onclick="closeInstallHelp()"
+            >
+                ПОНЯТНО
+            </button>
+
+        </div>
+    </div>
 
 
     <!-- ТОПЛИВО -->
